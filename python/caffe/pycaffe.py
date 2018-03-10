@@ -116,6 +116,7 @@ def _Net_forward(self, blobs=None, start=None, end=None, **kwargs):
         outputs = set(self.top_names[end] + blobs)
     else:
         end_ind = len(self.layers) - 1
+
         outputs = set(self.outputs + blobs)
 
     if kwargs:

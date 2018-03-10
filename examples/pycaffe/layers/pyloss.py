@@ -26,7 +26,7 @@ class EuclideanLossLayer(caffe.Layer):
         self.diff[...] = bottom[0].data - bottom[1].data
         top[0].data[...] = np.sum(self.diff**2) / bottom[0].num / 2.
 
-    def backward(self, top, propagate_down, bottom):
+    def backward(self, top, propagate_down, bottom)
         for i in range(2):
             if not propagate_down[i]:
                 continue
