@@ -430,9 +430,13 @@ bool UpgradeV0LayerParameter(const V1LayerParameter& v0_layer_connection,
         is_fully_compatible = false;
       }
     }
-    if (v0_layer_param.has_cropsize()) {
+    if (v0_layer_param.has_cropwidth()) {
       layer_param->mutable_transform_param()->
-          set_crop_size(v0_layer_param.cropsize());
+          set_crop_width(v0_layer_param.cropwidth());
+    }
+    if (v0_layer_param.has_cropheight()) {
+      layer_param->mutable_transform_param()->
+          set_crop_height(v0_layer_param.cropheight());
     }
     if (v0_layer_param.has_mirror()) {
       layer_param->mutable_transform_param()->
@@ -611,21 +615,24 @@ bool NetNeedsDataUpgrade(const NetParameter& net_param) {
       DataParameter layer_param = net_param.layers(i).data_param();
       if (layer_param.has_scale()) { return true; }
       if (layer_param.has_mean_file()) { return true; }
-      if (layer_param.has_crop_size()) { return true; }
+      if (layer_param.has_crop_width()) { return true; }
+      if (layer_param.has_crop_height()) { return true; }
       if (layer_param.has_mirror()) { return true; }
     }
     if (net_param.layers(i).type() == V1LayerParameter_LayerType_IMAGE_DATA) {
       ImageDataParameter layer_param = net_param.layers(i).image_data_param();
       if (layer_param.has_scale()) { return true; }
       if (layer_param.has_mean_file()) { return true; }
-      if (layer_param.has_crop_size()) { return true; }
+      if (layer_param.has_crop_width()) { return true; }
+      if (layer_param.has_crop_height()) { return true; }
       if (layer_param.has_mirror()) { return true; }
     }
     if (net_param.layers(i).type() == V1LayerParameter_LayerType_WINDOW_DATA) {
       WindowDataParameter layer_param = net_param.layers(i).window_data_param();
       if (layer_param.has_scale()) { return true; }
       if (layer_param.has_mean_file()) { return true; }
-      if (layer_param.has_crop_size()) { return true; }
+      if (layer_param.has_crop_width()) { return true; }
+      if (layer_param.has_crop_height()) { return true; }
       if (layer_param.has_mirror()) { return true; }
     }
   }
@@ -647,9 +654,13 @@ bool NetNeedsDataUpgrade(const NetParameter& net_param) {
         transform_param->set_mean_file(layer_param->mean_file()); \
         layer_param->clear_mean_file(); \
       } \
-      if (layer_param->has_crop_size()) { \
-        transform_param->set_crop_size(layer_param->crop_size()); \
-        layer_param->clear_crop_size(); \
+      if (layer_param->has_crop_width()) { \
+        transform_param->set_crop_width(layer_param->crop_width()); \
+        layer_param->clear_crop_width(); \
+      } \
+      if (layer_param->has_crop_height()) { \
+        transform_param->set_crop_height(layer_param->crop_height()); \
+        layer_param->clear_crop_height(); \
       } \
       if (layer_param->has_mirror()) { \
         transform_param->set_mirror(layer_param->mirror()); \

@@ -67,7 +67,7 @@ void WindowDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
 
   const bool prefetch_needs_rand =
       this->transform_param_.mirror() ||
-      this->transform_param_.crop_size();
+      (this->transform_param_.crop_width() && this->transform_param_.crop_height());
   if (prefetch_needs_rand) {
     const unsigned int prefetch_rng_seed = caffe_rng_rand();
     prefetch_rng_.reset(new Caffe::RNG(prefetch_rng_seed));
@@ -169,13 +169,15 @@ void WindowDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
       << this->layer_param_.window_data_param().crop_mode();
 
   // image
-  const int crop_size = this->transform_param_.crop_size();
-  CHECK_GT(crop_size, 0);
+  const int crop_width = this->transform_param_.crop_width();
+  const int crop_height = this->transform_param_.crop_height();
+  CHECK_GT(crop_width, 0);
+  CHECK_GT(crop_height, 0);
   const int batch_size = this->layer_param_.window_data_param().batch_size();
-  top[0]->Reshape(batch_size, channels, crop_size, crop_size);
+  top[0]->Reshape(batch_size, channels, crop_height, crop_width);
   for (int i = 0; i < this->prefetch_.size(); ++i)
     this->prefetch_[i]->data_.Reshape(
-        batch_size, channels, crop_size, crop_size);
+        batch_size, channels, crop_height, crop_width);
 
   LOG(INFO) << "output data size: " << top[0]->num() << ","
       << top[0]->channels() << "," << top[0]->height() << ","
@@ -238,7 +240,8 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
   const Dtype scale = this->layer_param_.window_data_param().scale();
   const int batch_size = this->layer_param_.window_data_param().batch_size();
   const int context_pad = this->layer_param_.window_data_param().context_pad();
-  const int crop_size = this->transform_param_.crop_size();
+  const int crop_width = this->transform_param_.crop_width();
+  const int crop_height = this->transform_param_.crop_height();
   const bool mirror = this->transform_param_.mirror();
   const float fg_fraction =
       this->layer_param_.window_data_param().fg_fraction();
@@ -248,11 +251,11 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
   int mean_height = 0;
   if (this->has_mean_file_) {
     mean = this->data_mean_.mutable_cpu_data();
-    mean_off = (this->data_mean_.width() - crop_size) / 2;
+    mean_off = (this->data_mean_.width() - crop_width) / 2;
     mean_width = this->data_mean_.width();
     mean_height = this->data_mean_.height();
   }
-  cv::Size cv_crop_size(crop_size, crop_size);
+  cv::Size cv_crop_size(crop_width, crop_height);
   const string& crop_mode = this->layer_param_.window_data_param().crop_mode();
 
   bool use_square = (crop_mode == "square") ? true : false;
@@ -312,8 +315,10 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
         // scale factor by which to expand the original region
         // such that after warping the expanded region to crop_size x crop_size
         // there's exactly context_pad amount of padding on each side
-        Dtype context_scale = static_cast<Dtype>(crop_size) /
-            static_cast<Dtype>(crop_size - 2*context_pad);
+        Dtype context_scale_w = static_cast<Dtype>(crop_width) /
+            static_cast<Dtype>(crop_width - 2*context_pad);
+        Dtype context_scale_h = static_cast<Dtype>(crop_height) /
+            static_cast<Dtype>(crop_height - 2*context_pad);
 
         // compute the expanded region
         Dtype half_height = static_cast<Dtype>(y2-y1+1)/2.0;
@@ -327,10 +332,10 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
             half_height = half_width;
           }
         }
-        x1 = static_cast<int>(round(center_x - half_width*context_scale));
-        x2 = static_cast<int>(round(center_x + half_width*context_scale));
-        y1 = static_cast<int>(round(center_y - half_height*context_scale));
-        y2 = static_cast<int>(round(center_y + half_height*context_scale));
+        x1 = static_cast<int>(round(center_x - half_width*context_scale_w));
+        x2 = static_cast<int>(round(center_x + half_width*context_scale_w));
+        y1 = static_cast<int>(round(center_y - half_height*context_scale_h));
+        y2 = static_cast<int>(round(center_y + half_height*context_scale_h));
 
         // the expanded region may go outside of the image
         // so we compute the clipped (expanded) region and keep track of
@@ -357,9 +362,9 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
         // scale factors that would be used to warp the unclipped
         // expanded region
         Dtype scale_x =
-            static_cast<Dtype>(crop_size)/static_cast<Dtype>(unclipped_width);
+            static_cast<Dtype>(crop_width)/static_cast<Dtype>(unclipped_width);
         Dtype scale_y =
-            static_cast<Dtype>(crop_size)/static_cast<Dtype>(unclipped_height);
+            static_cast<Dtype>(crop_height)/static_cast<Dtype>(unclipped_height);
 
         // size to warp the clipped expanded region to
         cv_crop_size.width =
@@ -381,11 +386,11 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
 
         // ensure that the warped, clipped region plus the padding fits in the
         // crop_size x crop_size image (it might not due to rounding)
-        if (pad_h + cv_crop_size.height > crop_size) {
-          cv_crop_size.height = crop_size - pad_h;
+        if (pad_h + cv_crop_size.height > crop_height) {
+          cv_crop_size.height = crop_height - pad_h;
         }
-        if (pad_w + cv_crop_size.width > crop_size) {
-          cv_crop_size.width = crop_size - pad_w;
+        if (pad_w + cv_crop_size.width > crop_width) {
+          cv_crop_size.width = crop_width - pad_w;
         }
       }
 
@@ -405,8 +410,8 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
         int img_index = 0;
         for (int w = 0; w < cv_cropped_img.cols; ++w) {
           for (int c = 0; c < channels; ++c) {
-            int top_index = ((item_id * channels + c) * crop_size + h + pad_h)
-                     * crop_size + w + pad_w;
+            int top_index = ((item_id * channels + c) * crop_height + h + pad_h)
+                     * crop_width + w + pad_w;
             // int top_index = (c * height + h) * width + w;
             Dtype pixel = static_cast<Dtype>(ptr[img_index++]);
             if (this->has_mean_file_) {

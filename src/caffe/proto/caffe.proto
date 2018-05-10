@@ -431,17 +431,18 @@ message TransformationParameter {
   // Specify if we want to randomly mirror data.
   optional bool mirror = 2 [default = false];
   // Specify if we would like to randomly crop an image.
-  optional uint32 crop_size = 3 [default = 0];
+  optional uint32 crop_width = 3 [default = 0];
+  optional uint32 crop_height = 4 [default = 0];
   // mean_file and mean_value cannot be specified at the same time
-  optional string mean_file = 4;
+  optional string mean_file = 5;
   // if specified can be repeated once (would subtract it from all the channels)
   // or can be repeated the same number of times as channels
   // (would subtract them from the corresponding channel)
-  repeated float mean_value = 5;
+  repeated float mean_value = 6;
   // Force the decoded image to have 3 color channels.
-  optional bool force_color = 6 [default = false];
+  optional bool force_color = 7 [default = false];
   // Force the decoded image to have 1 color channels.
-  optional bool force_gray = 7 [default = false];
+  optional bool force_gray = 8 [default = false];
 }
 
 // Message that stores parameters shared by loss layers
@@ -675,7 +676,8 @@ message DataParameter {
   optional string mean_file = 3;
   // DEPRECATED. See TransformationParameter. Specify if we would like to randomly
   // crop an image.
-  optional uint32 crop_size = 5 [default = 0];
+  optional uint32 crop_width = 5 [default = 0];
+  optional uint32 crop_height = 11 [default = 0];
   // DEPRECATED. See TransformationParameter. Specify if we want to randomly mirror
   // data.
   optional bool mirror = 6 [default = false];
@@ -819,7 +821,8 @@ message ImageDataParameter {
   optional string mean_file = 3;
   // DEPRECATED. See TransformationParameter. Specify if we would like to randomly
   // crop an image.
-  optional uint32 crop_size = 5 [default = 0];
+  optional uint32 crop_width = 5 [default = 0];
+  optional uint32 crop_height = 13 [default = 0];
   // DEPRECATED. See TransformationParameter. Specify if we want to randomly mirror
   // data.
   optional bool mirror = 6 [default = false];
@@ -1190,7 +1193,8 @@ message WindowDataParameter {
   // Specify the batch size.
   optional uint32 batch_size = 4;
   // Specify if we would like to randomly crop an image.
-  optional uint32 crop_size = 5 [default = 0];
+  optional uint32 crop_width = 5 [default = 0];
+  optional uint32 crop_height = 14 [default = 0];
   // Specify if we want to randomly mirror data.
   optional bool mirror = 6 [default = false];
   // Foreground (object) overlap threshold
@@ -1348,7 +1352,7 @@ message V0LayerParameter {
   optional uint32 local_size = 13 [default = 5]; // for local response norm
   optional float alpha = 14 [default = 1.]; // for local response norm
   optional float beta = 15 [default = 0.75]; // for local response norm
-  optional float k = 22 [default = 1.];
+  optional float k = 23 [default = 1.];
 
   // For data layers, specify the data source
   optional string source = 16;
@@ -1360,9 +1364,10 @@ message V0LayerParameter {
   // For data layers, specify the batch size.
   optional uint32 batchsize = 19;
   // For data layers, specify if we would like to randomly crop an image.
-  optional uint32 cropsize = 20 [default = 0];
+  optional uint32 cropwidth = 20 [default = 0];
+  optional uint32 cropheight = 21 [default = 0];
   // For data layers, specify if we want to randomly mirror data.
-  optional bool mirror = 21 [default = false];
+  optional bool mirror = 22 [default = false];
 
   // The blobs containing the numeric parameters of the layer
   repeated BlobProto blobs = 50;
